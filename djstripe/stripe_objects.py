@@ -155,6 +155,22 @@ class StripeObject(models.Model):
 
         return cls.stripe_class.create(api_key=api_key, **kwargs)
 
+    def api_modify(self, api_key=djstripe_settings.STRIPE_SECRET_KEY, fields=None, **kwargs):
+        """
+        Call the stripe API's modify operation for this model.
+
+        :param api_key: The api key to use for this request. Defualts to djstripe_settings.STRIPE_SECRET_KEY.
+        :type api_key: string
+
+        :param fields: An iterable of field names to get from the current object and to pass to stripe
+        :type api_key: iterable
+        """
+
+        if fields:
+            kwargs.update({field: getattr(self, field) for field in fields})
+
+        return self.stripe_class.modify(sid=self.stripe_id, api_key=api_key, **kwargs)
+
     def _api_delete(self, api_key=None, **kwargs):
         """
         Call the stripe API's delete operation for this model
