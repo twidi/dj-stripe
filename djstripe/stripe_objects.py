@@ -443,6 +443,10 @@ class StripeObject(models.Model):
     def __str__(self):
         return smart_text("<{list}>".format(list=", ".join(self.str_parts())))
 
+    def sync_from_stripe(self, api_key=None):
+        """Get data from the current object on stripe and update it locally"""
+        self.sync_from_stripe_data(self.api_retrieve(api_key))
+
 
 class StripeSource(PolymorphicModel, StripeObject):
     customer = models.ForeignKey("Customer", on_delete=models.CASCADE, related_name="sources")
