@@ -8,12 +8,19 @@
 """
 
 import decimal
+from importlib import import_module
 
+from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured, FieldError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
-from jsonfield import JSONField
+try:
+    json_field_path = getattr(settings, 'JSON_FIELD_PATH', 'jsonfield.JSONField')
+    json_field_module, json_field_name = json_field_path.rsplit('.', 1)
+    JSONField = getattr(import_module(json_field_module), json_field_name)
+except ImportError:
+    from jsonfield import JSONField
 
 from .utils import dict_nested_accessor, convert_tstamp
 
