@@ -163,6 +163,10 @@ Use ``Customer.sources`` and ``Customer.subscriptions`` to access them.
     class Meta:
         unique_together = ("subscriber", "livemode")
 
+    @property
+    def email(self):
+        return self.subscriber.email
+
     def str_parts(self):
         parts = []
 
