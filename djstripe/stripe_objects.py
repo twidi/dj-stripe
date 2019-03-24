@@ -445,7 +445,8 @@ class StripeObject(models.Model):
 
     def sync_from_stripe(self, api_key=None):
         """Get data from the current object on stripe and update it locally"""
-        self.sync_from_stripe_data(self.api_retrieve(api_key))
+        instance = self.sync_from_stripe_data(self.api_retrieve(api_key))
+        self.__dict__ = instance.__dict__
 
 
 class StripeSource(PolymorphicModel, StripeObject):
