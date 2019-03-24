@@ -76,13 +76,21 @@ class StripeFieldMixin(object):
     def stripe_to_db(self, data):
         """Try converting stripe fields to defined database fields."""
         if not self.deprecated:
+
+            if self.stripe_name:
+                try:
+                    return dict_nested_accessor(data, self.stripe_name)
+                except (KeyError, TypeError):
+                    pass
+
+            if self.nested_name:
+                try:
+                    return dict_nested_accessor(data, self.nested_name + "." + self.name)
+                except (KeyError, TypeError):
+                    pass
+
             try:
-                if self.stripe_name:
-                    result = dict_nested_accessor(data, self.stripe_name)
-                elif self.nested_name:
-                    result = dict_nested_accessor(data, self.nested_name + "." + self.name)
-                else:
-                    result = data[self.name]
+                return data[self.name]
             except (KeyError, TypeError):
                 if self.stripe_required:
                     model_name = self.model._meta.object_name if hasattr(self, "model") else ""
@@ -90,9 +98,7 @@ class StripeFieldMixin(object):
                                      " provided in {model_name} data object.".format(field_name=self.name,
                                                                                      model_name=model_name))
                 else:
-                    result = None
-
-            return result
+                    return None
 
 
 class StripePercentField(StripeFieldMixin, models.DecimalField):
