@@ -854,7 +854,7 @@ Fields not implemented:
 
         return stripe_invoiceitem
 
-    def add_card(self, source, set_default=True):
+    def add_card(self, source, set_default=True, three_d_secure_info=None):
         """
         Adds a card to this customer's account.
 
@@ -867,10 +867,42 @@ Fields not implemented:
         """
 
         stripe_customer = self.api_retrieve()
-        stripe_card = stripe_customer.sources.create(source=source)
 
-        if set_default:
-            stripe_customer.default_source = stripe_card["id"]
+        livemode = djstripe_settings.STRIPE_LIVE_MODE
+        api_key = djstripe_settings.LIVE_API_KEY if livemode else djstripe_settings.TEST_API_KEY
+
+        stripe_source = stripe.Source.create(token=source, type='card', api_key=api_key)
+        source_id = stripe_source['id']
+        stripe_card = stripe_customer.sources.create(source=source_id)
+
+        do_save_customer = set_default
+
+        if three_d_secure_info and stripe_source['card'].get('three_d_secure') in ('required', 'recommended'):
+            secure_source = stripe.Source.create(
+                type='three_d_secure',
+                amount=three_d_secure_info['amount'],
+                currency=three_d_secure_info['currency'],
+                three_d_secure={
+                    'card': source_id,
+                    'customer': stripe_customer['id']
+                },
+                redirect={
+                    'return_url': three_d_secure_info['return_url'],
+                },
+                api_key=api_key
+            )
+            if not stripe_customer.metadata:
+                stripe_customer.metadata = {}
+            stripe_customer.metadata.update({
+                'three_d_secure__source_id': secure_source['id'],
+                'three_d_secure__redirect_url': secure_source['redirect']['url'],
+                'three_d_secure__status': 'pending',
+            })
+            do_save_customer = True
+
+        if do_save_customer:
+            if set_default:
+                stripe_customer.default_source = stripe_card["id"]
             stripe_customer.save()
 
         return stripe_card
@@ -1170,49 +1202,55 @@ Fields not implemented:
 
     stripe_class = stripe.Card
 
-    address_city = StripeTextField(null=True, help_text="Billing address city.")
-    address_country = StripeTextField(null=True, help_text="Billing address country.")
-    address_line1 = StripeTextField(null=True, help_text="Billing address (Line 1).")
+    address_city = StripeTextField(null=True, help_text="Billing address city.", stripe_name='owner.address.city', nested_name='card')
+    address_country = StripeTextField(null=True, help_text="Billing address country.", stripe_name='owner.address.country', nested_name='card')
+    address_line1 = StripeTextField(null=True, help_text="Billing address (Line 1).", stripe_name='owner.address.line1', nested_name='card')
     address_line1_check = StripeCharField(
         null=True,
         max_length=11,
         choices=CARD_CHECK_RESULT_CHOICES,
-        help_text="If ``address_line1`` was provided, results of the check."
+        help_text="If ``address_line1`` was provided, results of the check.",
+        nested_name='card'
     )
-    address_line2 = StripeTextField(null=True, help_text="Billing address (Line 2).")
-    address_state = StripeTextField(null=True, help_text="Billing address state.")
-    address_zip = StripeTextField(null=True, help_text="Billing address zip code.")
+    address_line2 = StripeTextField(null=True, help_text="Billing address (Line 2).", stripe_name='owner.address.line2', nested_name='card')
+    address_state = StripeTextField(null=True, help_text="Billing address state.", stripe_name='owner.address.state', nested_name='card')
+    address_zip = StripeTextField(null=True, help_text="Billing address zip code.", stripe_name='owner.address.postal_code', nested_name='card')
     address_zip_check = StripeCharField(
         null=True,
         max_length=11,
         choices=CARD_CHECK_RESULT_CHOICES,
-        help_text="If ``address_zip`` was provided, results of the check."
+        help_text="If ``address_zip`` was provided, results of the check.",
+        nested_name='card'
     )
-    brand = StripeCharField(max_length=16, choices=BRAND_CHOICES, help_text="Card brand.")
-    country = StripeCharField(max_length=2, help_text="Two-letter ISO code representing the country of the card.")
+    brand = StripeCharField(max_length=16, choices=BRAND_CHOICES, help_text="Card brand.", nested_name='card')
+    country = StripeCharField(max_length=2, help_text="Two-letter ISO code representing the country of the card.", nested_name='card')
     cvc_check = StripeCharField(
         null=True,
         max_length=11,
         choices=CARD_CHECK_RESULT_CHOICES,
-        help_text="If a CVC was provided, results of the check."
+        help_text="If a CVC was provided, results of the check.",
+        nested_name='card'
     )
     dynamic_last4 = StripeCharField(
         null=True,
         max_length=4,
-        help_text="(For tokenized numbers only.) The last four digits of the device account number."
+        help_text="(For tokenized numbers only.) The last four digits of the device account number.",
+        nested_name='card'
     )
-    exp_month = StripeIntegerField(help_text="Card expiration month.")
-    exp_year = StripeIntegerField(help_text="Card expiration year.")
-    fingerprint = StripeTextField(stripe_required=False, help_text="Uniquely identifies this particular card number.")
-    funding = StripeCharField(max_length=7, choices=FUNDING_TYPE_CHOICES, help_text="Card funding type.")
-    last4 = StripeCharField(max_length=4, help_text="Last four digits of Card number.")
-    name = StripeTextField(null=True, help_text="Cardholder name.")
+    exp_month = StripeIntegerField(help_text="Card expiration month.", nested_name='card')
+    exp_year = StripeIntegerField(help_text="Card expiration year.", nested_name='card')
+    fingerprint = StripeTextField(stripe_required=False, help_text="Uniquely identifies this particular card number.", nested_name='card')
+    funding = StripeCharField(max_length=7, choices=FUNDING_TYPE_CHOICES, help_text="Card funding type.", nested_name='card')
+    last4 = StripeCharField(max_length=4, help_text="Last four digits of Card number.", nested_name='card')
+    name = StripeTextField(null=True, help_text="Cardholder name.", nested_name='card')
     tokenization_method = StripeCharField(
         null=True,
         max_length=11,
         choices=TOKENIZATION_METHOD_CHOICES,
-        help_text="If the card number is tokenized, this is the method that was used."
+        help_text="If the card number is tokenized, this is the method that was used.",
+        nested_name='card'
     )
+    three_d_secure = StripeTextField(null=True, stripe_required=False, help_text="State of 3D secure requirement", nested_name='card')
 
     def api_retrieve(self, api_key=None):
         # OVERRIDING the parent version of this function

@@ -401,9 +401,10 @@ Use ``Customer.sources`` and ``Customer.subscriptions`` to access them.
         """ Check whether the customer has a valid payment source."""
         return self.default_source is not None
 
-    def add_card(self, source, set_default=True):
-        new_stripe_card = super(Customer, self).add_card(source, set_default)
+    def add_card(self, source, set_default=True, three_d_secure_info=None):
+        new_stripe_card = super(Customer, self).add_card(source, set_default, three_d_secure_info=three_d_secure_info)
         new_card = Card.sync_from_stripe_data(new_stripe_card)
+        self.sync_from_stripe()
 
         # Change the default source
         if set_default:
