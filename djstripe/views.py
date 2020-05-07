@@ -11,6 +11,7 @@ from __future__ import unicode_literals
 import json
 import logging
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import logout as auth_logout, REDIRECT_FIELD_NAME
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -62,7 +63,7 @@ class CancelSubscriptionView(LoginRequiredMixin, SubscriptionMixin, FormView):
         next = self.request.GET.get(REDIRECT_FIELD_NAME)
 
         # is_safe_url() will ensure we don't redirect to another domain
-        if next and is_safe_url(next):
+        if next and is_safe_url(next, allowed_hosts=settings.ALLOWED_HOSTS):
             return next
         else:
             return self.redirect_url
