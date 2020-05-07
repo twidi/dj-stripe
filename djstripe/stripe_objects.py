@@ -36,7 +36,7 @@ from .exceptions import StripeObjectManipulationException
 from .fields import (
     StripeBooleanField, StripeCharField, StripeCurrencyField, StripeDateTimeField,
     StripeFieldMixin, StripeIdField, StripeIntegerField, StripeJSONField,
-    StripeNullBooleanField, StripePercentField, StripePositiveIntegerField,
+    StripePercentField, StripePositiveIntegerField,
     StripeTextField
 )
 from .managers import StripeObjectManager
@@ -63,7 +63,7 @@ class StripeObject(models.Model):
     stripe_objects = StripeObjectManager()
 
     stripe_id = StripeIdField(unique=True, stripe_name='id')
-    livemode = StripeNullBooleanField(
+    livemode = StripeBooleanField(
         default=None,
         null=True,
         stripe_required=False,

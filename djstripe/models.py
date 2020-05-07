@@ -19,7 +19,7 @@ from datetime import timedelta
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models.fields import (
-    BooleanField, CharField, DateTimeField, NullBooleanField, TextField, UUIDField
+    BooleanField, CharField, DateTimeField, TextField, UUIDField
 )
 from django.db.models.fields.related import ForeignKey, OneToOneField
 from django.db.models.deletion import SET_NULL
@@ -483,7 +483,7 @@ class Event(StripeEvent):
         null=True, on_delete=models.CASCADE,
         help_text="In the event that there is a related customer, this will point to that Customer record"
     )
-    valid = NullBooleanField(
+    valid = BooleanField(
         null=True,
         help_text="Tri-state bool. Null == validity not yet confirmed. Otherwise, this field indicates that this "
         "event was checked via stripe api and found to be either authentic (valid=True) or in-authentic (possibly "

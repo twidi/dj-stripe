@@ -151,12 +151,6 @@ class StripeBooleanField(StripeFieldMixin, models.BooleanField):
         super(StripeBooleanField, self).__init__(*args, **kwargs)
 
 
-class StripeNullBooleanField(StripeFieldMixin, models.NullBooleanField):
-    """A field used to define a NullBooleanField value according to djstripe logic."""
-
-    pass
-
-
 class StripeCharField(StripeFieldMixin, models.CharField):
     """A field used to define a CharField value according to djstripe logic."""
 
