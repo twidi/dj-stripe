@@ -8,12 +8,19 @@
 """
 
 import decimal
+from importlib import import_module
 
+from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured, FieldError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
-from jsonfield import JSONField
+try:
+    json_field_path = getattr(settings, 'JSON_FIELD_PATH', 'jsonfield.JSONField')
+    json_field_module, json_field_name = json_field_path.rsplit('.', 1)
+    JSONField = getattr(import_module(json_field_module), json_field_name)
+except ImportError:
+    from jsonfield import JSONField
 
 from .utils import dict_nested_accessor, convert_tstamp
 
@@ -69,13 +76,21 @@ class StripeFieldMixin(object):
     def stripe_to_db(self, data):
         """Try converting stripe fields to defined database fields."""
         if not self.deprecated:
+
+            if self.stripe_name:
+                try:
+                    return dict_nested_accessor(data, self.stripe_name)
+                except (KeyError, TypeError):
+                    pass
+
+            if self.nested_name:
+                try:
+                    return dict_nested_accessor(data, self.nested_name + "." + self.name)
+                except (KeyError, TypeError):
+                    pass
+
             try:
-                if self.stripe_name:
-                    result = dict_nested_accessor(data, self.stripe_name)
-                elif self.nested_name:
-                    result = dict_nested_accessor(data, self.nested_name + "." + self.name)
-                else:
-                    result = data[self.name]
+                return data[self.name]
             except (KeyError, TypeError):
                 if self.stripe_required:
                     model_name = self.model._meta.object_name if hasattr(self, "model") else ""
@@ -83,9 +98,7 @@ class StripeFieldMixin(object):
                                      " provided in {model_name} data object.".format(field_name=self.name,
                                                                                      model_name=model_name))
                 else:
-                    result = None
-
-            return result
+                    return None
 
 
 class StripePercentField(StripeFieldMixin, models.DecimalField):
@@ -136,12 +149,6 @@ class StripeBooleanField(StripeFieldMixin, models.BooleanField):
             raise ImproperlyConfigured("Boolean field cannot be deprecated. Change field type to "
                                        "StripeNullBooleanField")
         super(StripeBooleanField, self).__init__(*args, **kwargs)
-
-
-class StripeNullBooleanField(StripeFieldMixin, models.NullBooleanField):
-    """A field used to define a NullBooleanField value according to djstripe logic."""
-
-    pass
 
 
 class StripeCharField(StripeFieldMixin, models.CharField):

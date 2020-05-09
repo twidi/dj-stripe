@@ -30,7 +30,7 @@ class PaymentsContextMixin(object):
 class SubscriptionMixin(PaymentsContextMixin):
     """Adds customer subscription context to a view."""
 
-    def get_context_data(self, *args, **kwargs):
+    def get_context_data(self, **kwargs):
         """Inject is_plans_plural and customer into context_data."""
         context = super(SubscriptionMixin, self).get_context_data(**kwargs)
         context['is_plans_plural'] = Plan.objects.count() > 1

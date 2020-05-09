@@ -8,10 +8,11 @@
 """
 from __future__ import unicode_literals
 
+import six
+
 from django.apps import apps as django_apps
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
-from django.utils import six
 from django.utils.dateparse import date_re
 from django.utils.module_loading import import_string
 import stripe

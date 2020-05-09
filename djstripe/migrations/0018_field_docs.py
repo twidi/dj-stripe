@@ -18,7 +18,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='account',
             name='livemode',
-            field=djstripe.fields.StripeNullBooleanField(default=False, help_text='Null here indicates that the livemode status is unknown or was previously unrecorded. Otherwise, this field indicates whether this record comes from Stripe test mode or live mode operation.'),
+            field=djstripe.fields.StripeBooleanField(null=True, default=False, help_text='Null here indicates that the livemode status is unknown or was previously unrecorded. Otherwise, this field indicates whether this record comes from Stripe test mode or live mode operation.'),
         ),
         migrations.AlterField(
             model_name='account',
@@ -48,7 +48,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='charge',
             name='livemode',
-            field=djstripe.fields.StripeNullBooleanField(default=False, help_text='Null here indicates that the livemode status is unknown or was previously unrecorded. Otherwise, this field indicates whether this record comes from Stripe test mode or live mode operation.'),
+            field=djstripe.fields.StripeBooleanField(null=True, default=False, help_text='Null here indicates that the livemode status is unknown or was previously unrecorded. Otherwise, this field indicates whether this record comes from Stripe test mode or live mode operation.'),
         ),
         migrations.AlterField(
             model_name='charge',
@@ -93,7 +93,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='customer',
             name='livemode',
-            field=djstripe.fields.StripeNullBooleanField(default=False, help_text='Null here indicates that the livemode status is unknown or was previously unrecorded. Otherwise, this field indicates whether this record comes from Stripe test mode or live mode operation.'),
+            field=djstripe.fields.StripeBooleanField(null=True, default=False, help_text='Null here indicates that the livemode status is unknown or was previously unrecorded. Otherwise, this field indicates whether this record comes from Stripe test mode or live mode operation.'),
         ),
         migrations.AlterField(
             model_name='customer',
@@ -103,7 +103,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='event',
             name='livemode',
-            field=djstripe.fields.StripeNullBooleanField(default=False, help_text='Null here indicates that the livemode status is unknown or was previously unrecorded. Otherwise, this field indicates whether this record comes from Stripe test mode or live mode operation.'),
+            field=djstripe.fields.StripeBooleanField(null=True, default=False, help_text='Null here indicates that the livemode status is unknown or was previously unrecorded. Otherwise, this field indicates whether this record comes from Stripe test mode or live mode operation.'),
         ),
         migrations.AlterField(
             model_name='event',
@@ -128,7 +128,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='event',
             name='valid',
-            field=models.NullBooleanField(help_text='Tri-state bool. Null == validity not yet confirmed. Otherwise, this field indicates that this event was checked via stripe api and found to be either authentic (valid=True) or in-authentic (possibly malicious)'),
+            field=models.BooleanField(null=True, help_text='Tri-state bool. Null == validity not yet confirmed. Otherwise, this field indicates that this event was checked via stripe api and found to be either authentic (valid=True) or in-authentic (possibly malicious)'),
         ),
         migrations.AlterField(
             model_name='event',
@@ -173,7 +173,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='invoice',
             name='livemode',
-            field=djstripe.fields.StripeNullBooleanField(default=False, help_text='Null here indicates that the livemode status is unknown or was previously unrecorded. Otherwise, this field indicates whether this record comes from Stripe test mode or live mode operation.'),
+            field=djstripe.fields.StripeBooleanField(null=True, default=False, help_text='Null here indicates that the livemode status is unknown or was previously unrecorded. Otherwise, this field indicates whether this record comes from Stripe test mode or live mode operation.'),
         ),
         migrations.AlterField(
             model_name='invoice',
@@ -218,7 +218,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='invoiceitem',
             name='livemode',
-            field=djstripe.fields.StripeNullBooleanField(default=False, help_text='Null here indicates that the livemode status is unknown or was previously unrecorded. Otherwise, this field indicates whether this record comes from Stripe test mode or live mode operation.'),
+            field=djstripe.fields.StripeBooleanField(null=True, default=False, help_text='Null here indicates that the livemode status is unknown or was previously unrecorded. Otherwise, this field indicates whether this record comes from Stripe test mode or live mode operation.'),
         ),
         migrations.AlterField(
             model_name='invoiceitem',
@@ -253,7 +253,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='plan',
             name='livemode',
-            field=djstripe.fields.StripeNullBooleanField(default=False, help_text='Null here indicates that the livemode status is unknown or was previously unrecorded. Otherwise, this field indicates whether this record comes from Stripe test mode or live mode operation.'),
+            field=djstripe.fields.StripeBooleanField(null=True, default=False, help_text='Null here indicates that the livemode status is unknown or was previously unrecorded. Otherwise, this field indicates whether this record comes from Stripe test mode or live mode operation.'),
         ),
         migrations.AlterField(
             model_name='plan',
@@ -273,7 +273,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='stripesource',
             name='livemode',
-            field=djstripe.fields.StripeNullBooleanField(default=False, help_text='Null here indicates that the livemode status is unknown or was previously unrecorded. Otherwise, this field indicates whether this record comes from Stripe test mode or live mode operation.'),
+            field=djstripe.fields.StripeBooleanField(null=True, default=False, help_text='Null here indicates that the livemode status is unknown or was previously unrecorded. Otherwise, this field indicates whether this record comes from Stripe test mode or live mode operation.'),
         ),
         migrations.AlterField(
             model_name='stripesource',
@@ -308,7 +308,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='subscription',
             name='livemode',
-            field=djstripe.fields.StripeNullBooleanField(default=False, help_text='Null here indicates that the livemode status is unknown or was previously unrecorded. Otherwise, this field indicates whether this record comes from Stripe test mode or live mode operation.'),
+            field=djstripe.fields.StripeBooleanField(null=True, default=False, help_text='Null here indicates that the livemode status is unknown or was previously unrecorded. Otherwise, this field indicates whether this record comes from Stripe test mode or live mode operation.'),
         ),
         migrations.AlterField(
             model_name='subscription',
@@ -348,7 +348,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='transfer',
             name='livemode',
-            field=djstripe.fields.StripeNullBooleanField(default=False, help_text='Null here indicates that the livemode status is unknown or was previously unrecorded. Otherwise, this field indicates whether this record comes from Stripe test mode or live mode operation.'),
+            field=djstripe.fields.StripeBooleanField(null=True, default=False, help_text='Null here indicates that the livemode status is unknown or was previously unrecorded. Otherwise, this field indicates whether this record comes from Stripe test mode or live mode operation.'),
         ),
         migrations.AlterField(
             model_name='transfer',
