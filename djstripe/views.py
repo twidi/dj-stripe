@@ -20,7 +20,7 @@ from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
 from django.utils.encoding import smart_str
-from django.utils.http import is_safe_url
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import FormView, TemplateView, View
 
@@ -62,8 +62,8 @@ class CancelSubscriptionView(LoginRequiredMixin, SubscriptionMixin, FormView):
         """
         next = self.request.GET.get(REDIRECT_FIELD_NAME)
 
-        # is_safe_url() will ensure we don't redirect to another domain
-        if next and is_safe_url(next, allowed_hosts=settings.ALLOWED_HOSTS):
+        # url_has_allowed_host_and_scheme() will ensure we don't redirect to another domain
+        if next and url_has_allowed_host_and_scheme(next, allowed_hosts=settings.ALLOWED_HOSTS):
             return next
         else:
             return self.redirect_url

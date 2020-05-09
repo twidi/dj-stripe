@@ -12,8 +12,8 @@
 from __future__ import unicode_literals
 
 from django.core import checks
-from django.utils import six
 from django.core.exceptions import ImproperlyConfigured
+from django.utils.encoding import force_str
 
 
 @checks.register("djstripe")
@@ -52,7 +52,7 @@ def check_stripe_api_version(app_configs=None, **kwargs):
         djstripe_settings.check_stripe_api_version(version)
     except ImproperlyConfigured as ex:
         hint = "Use a valid date string value."
-        messages.append(checks.Critical(six.force_text(ex), hint=hint, id="djstripe.C004"))
+        messages.append(checks.Critical(force_str(ex), hint=hint, id="djstripe.C004"))
 
     if version != default_version:
         msg = (

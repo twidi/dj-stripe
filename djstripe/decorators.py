@@ -9,10 +9,9 @@
 """
 from __future__ import unicode_literals
 
-from functools import wraps
+from functools import wraps, WRAPPER_ASSIGNMENTS
 
 from django.shortcuts import redirect
-from django.utils.decorators import available_attrs
 
 from .settings import SUBSCRIPTION_REDIRECT, subscriber_request_callback
 from .utils import subscriber_has_active_subscription
@@ -26,7 +25,7 @@ def subscriber_passes_pay_test(test_func, plan=None, pay_page=SUBSCRIPTION_REDIR
     that takes the subscriber object and returns True if the subscriber passes.
     """
     def decorator(view_func):
-        @wraps(view_func, assigned=available_attrs(view_func))
+        @wraps(view_func, assigned=WRAPPER_ASSIGNMENTS)
         def _wrapped_view(request, *args, **kwargs):
             if test_func(subscriber_request_callback(request), plan):
                 return view_func(request, *args, **kwargs)
