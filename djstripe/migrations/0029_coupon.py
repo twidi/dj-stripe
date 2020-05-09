@@ -18,7 +18,7 @@ class Migration(migrations.Migration):
             name='Coupon',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('livemode', djstripe.fields.StripeNullBooleanField(default=False, help_text='Null here indicates that the livemode status is unknown or was previously unrecorded. Otherwise, this field indicates whether this record comes from Stripe test mode or live mode operation.')),
+                ('livemode', djstripe.fields.StripeBooleanField(null=True, default=False, help_text='Null here indicates that the livemode status is unknown or was previously unrecorded. Otherwise, this field indicates whether this record comes from Stripe test mode or live mode operation.')),
                 ('stripe_timestamp', djstripe.fields.StripeDateTimeField(help_text='The datetime this object was created in stripe.', null=True)),
                 ('metadata', djstripe.fields.StripeJSONField(blank=True, help_text='A set of key/value pairs that you can attach to an object. It can be useful for storing additional information about an object in a structured format.', null=True)),
                 ('description', djstripe.fields.StripeTextField(blank=True, help_text='A description of this object.', null=True)),

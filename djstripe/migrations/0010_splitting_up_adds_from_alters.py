@@ -36,7 +36,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='event',
             name='livemode',
-            field=djstripe.fields.StripeNullBooleanField(
+            field=djstripe.fields.StripeBooleanField(null=True,
                 help_text='Null here indicates that the livemode status is unknown or was previously unrecorded. \
                 Otherwise, this field indicates whether this record comes from Stripe test mode or live mode \
                 operation.', default=False),
@@ -61,7 +61,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='event',
             name='valid',
-            field=models.NullBooleanField(
+            field=models.BooleanField(null=True,
                 help_text='Tri-state bool. Null == validity not yet confirmed. Otherwise, this field indicates that \
                 this event was checked via stripe api and found to be either authentic (valid=True) or in-authentic \
                 (possibly malicious)'),

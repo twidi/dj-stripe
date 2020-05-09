@@ -21,11 +21,13 @@ dj-stripe functionality.
 from copy import deepcopy
 import decimal
 import sys
+import six
+from six import python_2_unicode_compatible
 
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-from django.utils import dateformat, six, timezone
-from django.utils.encoding import python_2_unicode_compatible, smart_text
+from django.utils import dateformat, timezone
+from django.utils.encoding import smart_str
 from polymorphic.models import PolymorphicModel
 import stripe
 from stripe.error import InvalidRequestError
@@ -36,7 +38,7 @@ from .exceptions import StripeObjectManipulationException
 from .fields import (
     StripeBooleanField, StripeCharField, StripeCurrencyField, StripeDateTimeField,
     StripeFieldMixin, StripeIdField, StripeIntegerField, StripeJSONField,
-    StripeNullBooleanField, StripePercentField, StripePositiveIntegerField,
+    StripePercentField, StripePositiveIntegerField,
     StripeTextField
 )
 from .managers import StripeObjectManager
@@ -63,7 +65,7 @@ class StripeObject(models.Model):
     stripe_objects = StripeObjectManager()
 
     stripe_id = StripeIdField(unique=True, stripe_name='id')
-    livemode = StripeNullBooleanField(
+    livemode = StripeBooleanField(
         default=None,
         null=True,
         stripe_required=False,
@@ -441,7 +443,7 @@ class StripeObject(models.Model):
         return instance
 
     def __str__(self):
-        return smart_text("<{list}>".format(list=", ".join(self.str_parts())))
+        return smart_str("<{list}>".format(list=", ".join(self.str_parts())))
 
     def sync_from_stripe(self, api_key=None):
         """Get data from the current object on stripe and update it locally"""
@@ -562,7 +564,7 @@ Fields not implemented:
     def str_parts(self):
         return [
             "amount={amount}".format(amount=self.amount),
-            "paid={paid}".format(paid=smart_text(self.paid)),
+            "paid={paid}".format(paid=smart_str(self.paid)),
         ] + super(StripeCharge, self).str_parts()
 
     def _calculate_refund_amount(self, amount=None):

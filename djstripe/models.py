@@ -16,15 +16,18 @@ import uuid
 import sys
 from datetime import timedelta
 
+import six
+from six import python_2_unicode_compatible
+
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models.fields import (
-    BooleanField, CharField, DateTimeField, NullBooleanField, TextField, UUIDField
+    BooleanField, CharField, DateTimeField, TextField, UUIDField
 )
 from django.db.models.fields.related import ForeignKey, OneToOneField
 from django.db.models.deletion import SET_NULL
-from django.utils import six, timezone
-from django.utils.encoding import python_2_unicode_compatible, smart_text
+from django.utils import timezone
+from django.utils.encoding import smart_str
 from django.utils.functional import cached_property
 from doc_inherit import class_doc_inherit
 from mock_django.query import QuerySetMock
@@ -171,7 +174,7 @@ Use ``Customer.sources`` and ``Customer.subscriptions`` to access them.
         parts = []
 
         if self.subscriber:
-            parts.append(smart_text(self.subscriber))
+            parts.append(smart_str(self.subscriber))
             parts.append("email={email}".format(email=self.subscriber.email))
         else:
             parts.append("(deleted)")
@@ -483,7 +486,7 @@ class Event(StripeEvent):
         null=True, on_delete=models.CASCADE,
         help_text="In the event that there is a related customer, this will point to that Customer record"
     )
-    valid = NullBooleanField(
+    valid = BooleanField(
         null=True,
         help_text="Tri-state bool. Null == validity not yet confirmed. Otherwise, this field indicates that this "
         "event was checked via stripe api and found to be either authentic (valid=True) or in-authentic (possibly "
@@ -1031,7 +1034,7 @@ class EventProcessingException(models.Model):
         )
 
     def __str__(self):
-        return smart_text("<{message}, pk={pk}, Event={event}>".format(
+        return smart_str("<{message}, pk={pk}, Event={event}>".format(
             message=self.message,
             pk=self.pk,
             event=self.event
