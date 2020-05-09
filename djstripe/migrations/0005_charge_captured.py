@@ -14,7 +14,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='charge',
             name='captured',
-            field=models.NullBooleanField(),
+            field=models.BooleanField(null=True),
             preserve_default=True,
         ),
     ]

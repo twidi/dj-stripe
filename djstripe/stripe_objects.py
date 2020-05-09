@@ -21,11 +21,13 @@ dj-stripe functionality.
 from copy import deepcopy
 import decimal
 import sys
+import six
+from six import python_2_unicode_compatible
 
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-from django.utils import dateformat, six, timezone
-from django.utils.encoding import python_2_unicode_compatible, smart_text
+from django.utils import dateformat, timezone
+from django.utils.encoding import smart_str
 from polymorphic.models import PolymorphicModel
 import stripe
 from stripe.error import InvalidRequestError
@@ -36,7 +38,7 @@ from .exceptions import StripeObjectManipulationException
 from .fields import (
     StripeBooleanField, StripeCharField, StripeCurrencyField, StripeDateTimeField,
     StripeFieldMixin, StripeIdField, StripeIntegerField, StripeJSONField,
-    StripeNullBooleanField, StripePercentField, StripePositiveIntegerField,
+    StripePercentField, StripePositiveIntegerField,
     StripeTextField
 )
 from .managers import StripeObjectManager
@@ -63,7 +65,7 @@ class StripeObject(models.Model):
     stripe_objects = StripeObjectManager()
 
     stripe_id = StripeIdField(unique=True, stripe_name='id')
-    livemode = StripeNullBooleanField(
+    livemode = StripeBooleanField(
         default=None,
         null=True,
         stripe_required=False,
@@ -154,6 +156,22 @@ class StripeObject(models.Model):
         """
 
         return cls.stripe_class.create(api_key=api_key, **kwargs)
+
+    def api_modify(self, api_key=djstripe_settings.STRIPE_SECRET_KEY, fields=None, **kwargs):
+        """
+        Call the stripe API's modify operation for this model.
+
+        :param api_key: The api key to use for this request. Defualts to djstripe_settings.STRIPE_SECRET_KEY.
+        :type api_key: string
+
+        :param fields: An iterable of field names to get from the current object and to pass to stripe
+        :type api_key: iterable
+        """
+
+        if fields:
+            kwargs.update({field: getattr(self, field) for field in fields})
+
+        return self.stripe_class.modify(sid=self.stripe_id, api_key=api_key, **kwargs)
 
     def _api_delete(self, api_key=None, **kwargs):
         """
@@ -425,7 +443,12 @@ class StripeObject(models.Model):
         return instance
 
     def __str__(self):
-        return smart_text("<{list}>".format(list=", ".join(self.str_parts())))
+        return smart_str("<{list}>".format(list=", ".join(self.str_parts())))
+
+    def sync_from_stripe(self, api_key=None):
+        """Get data from the current object on stripe and update it locally"""
+        instance = self.sync_from_stripe_data(self.api_retrieve(api_key))
+        self.__dict__ = instance.__dict__
 
 
 class StripeSource(PolymorphicModel, StripeObject):
@@ -541,7 +564,7 @@ Fields not implemented:
     def str_parts(self):
         return [
             "amount={amount}".format(amount=self.amount),
-            "paid={paid}".format(paid=smart_text(self.paid)),
+            "paid={paid}".format(paid=smart_str(self.paid)),
         ] + super(StripeCharge, self).str_parts()
 
     def _calculate_refund_amount(self, amount=None):
@@ -833,7 +856,7 @@ Fields not implemented:
 
         return stripe_invoiceitem
 
-    def add_card(self, source, set_default=True):
+    def add_card(self, source, set_default=True, three_d_secure_info=None):
         """
         Adds a card to this customer's account.
 
@@ -846,10 +869,42 @@ Fields not implemented:
         """
 
         stripe_customer = self.api_retrieve()
-        stripe_card = stripe_customer.sources.create(source=source)
 
-        if set_default:
-            stripe_customer.default_source = stripe_card["id"]
+        livemode = djstripe_settings.STRIPE_LIVE_MODE
+        api_key = djstripe_settings.LIVE_API_KEY if livemode else djstripe_settings.TEST_API_KEY
+
+        stripe_source = stripe.Source.create(token=source, type='card', api_key=api_key)
+        source_id = stripe_source['id']
+        stripe_card = stripe_customer.sources.create(source=source_id)
+
+        do_save_customer = set_default
+
+        if three_d_secure_info and stripe_source['card'].get('three_d_secure') in ('required', 'recommended'):
+            secure_source = stripe.Source.create(
+                type='three_d_secure',
+                amount=three_d_secure_info['amount'],
+                currency=three_d_secure_info['currency'],
+                three_d_secure={
+                    'card': source_id,
+                    'customer': stripe_customer['id']
+                },
+                redirect={
+                    'return_url': three_d_secure_info['return_url'],
+                },
+                api_key=api_key
+            )
+            if not stripe_customer.metadata:
+                stripe_customer.metadata = {}
+            stripe_customer.metadata.update({
+                'three_d_secure__source_id': secure_source['id'],
+                'three_d_secure__redirect_url': secure_source['redirect']['url'],
+                'three_d_secure__status': 'pending',
+            })
+            do_save_customer = True
+
+        if do_save_customer:
+            if set_default:
+                stripe_customer.default_source = stripe_card["id"]
             stripe_customer.save()
 
         return stripe_card
@@ -1149,49 +1204,55 @@ Fields not implemented:
 
     stripe_class = stripe.Card
 
-    address_city = StripeTextField(null=True, help_text="Billing address city.")
-    address_country = StripeTextField(null=True, help_text="Billing address country.")
-    address_line1 = StripeTextField(null=True, help_text="Billing address (Line 1).")
+    address_city = StripeTextField(null=True, help_text="Billing address city.", stripe_name='owner.address.city', nested_name='card')
+    address_country = StripeTextField(null=True, help_text="Billing address country.", stripe_name='owner.address.country', nested_name='card')
+    address_line1 = StripeTextField(null=True, help_text="Billing address (Line 1).", stripe_name='owner.address.line1', nested_name='card')
     address_line1_check = StripeCharField(
         null=True,
         max_length=11,
         choices=CARD_CHECK_RESULT_CHOICES,
-        help_text="If ``address_line1`` was provided, results of the check."
+        help_text="If ``address_line1`` was provided, results of the check.",
+        nested_name='card'
     )
-    address_line2 = StripeTextField(null=True, help_text="Billing address (Line 2).")
-    address_state = StripeTextField(null=True, help_text="Billing address state.")
-    address_zip = StripeTextField(null=True, help_text="Billing address zip code.")
+    address_line2 = StripeTextField(null=True, help_text="Billing address (Line 2).", stripe_name='owner.address.line2', nested_name='card')
+    address_state = StripeTextField(null=True, help_text="Billing address state.", stripe_name='owner.address.state', nested_name='card')
+    address_zip = StripeTextField(null=True, help_text="Billing address zip code.", stripe_name='owner.address.postal_code', nested_name='card')
     address_zip_check = StripeCharField(
         null=True,
         max_length=11,
         choices=CARD_CHECK_RESULT_CHOICES,
-        help_text="If ``address_zip`` was provided, results of the check."
+        help_text="If ``address_zip`` was provided, results of the check.",
+        nested_name='card'
     )
-    brand = StripeCharField(max_length=16, choices=BRAND_CHOICES, help_text="Card brand.")
-    country = StripeCharField(max_length=2, help_text="Two-letter ISO code representing the country of the card.")
+    brand = StripeCharField(max_length=16, choices=BRAND_CHOICES, help_text="Card brand.", nested_name='card')
+    country = StripeCharField(max_length=2, help_text="Two-letter ISO code representing the country of the card.", nested_name='card')
     cvc_check = StripeCharField(
         null=True,
         max_length=11,
         choices=CARD_CHECK_RESULT_CHOICES,
-        help_text="If a CVC was provided, results of the check."
+        help_text="If a CVC was provided, results of the check.",
+        nested_name='card'
     )
     dynamic_last4 = StripeCharField(
         null=True,
         max_length=4,
-        help_text="(For tokenized numbers only.) The last four digits of the device account number."
+        help_text="(For tokenized numbers only.) The last four digits of the device account number.",
+        nested_name='card'
     )
-    exp_month = StripeIntegerField(help_text="Card expiration month.")
-    exp_year = StripeIntegerField(help_text="Card expiration year.")
-    fingerprint = StripeTextField(stripe_required=False, help_text="Uniquely identifies this particular card number.")
-    funding = StripeCharField(max_length=7, choices=FUNDING_TYPE_CHOICES, help_text="Card funding type.")
-    last4 = StripeCharField(max_length=4, help_text="Last four digits of Card number.")
-    name = StripeTextField(null=True, help_text="Cardholder name.")
+    exp_month = StripeIntegerField(help_text="Card expiration month.", nested_name='card')
+    exp_year = StripeIntegerField(help_text="Card expiration year.", nested_name='card')
+    fingerprint = StripeTextField(stripe_required=False, help_text="Uniquely identifies this particular card number.", nested_name='card')
+    funding = StripeCharField(max_length=7, choices=FUNDING_TYPE_CHOICES, help_text="Card funding type.", nested_name='card')
+    last4 = StripeCharField(max_length=4, help_text="Last four digits of Card number.", nested_name='card')
+    name = StripeTextField(null=True, help_text="Cardholder name.", nested_name='card')
     tokenization_method = StripeCharField(
         null=True,
         max_length=11,
         choices=TOKENIZATION_METHOD_CHOICES,
-        help_text="If the card number is tokenized, this is the method that was used."
+        help_text="If the card number is tokenized, this is the method that was used.",
+        nested_name='card'
     )
+    three_d_secure = StripeTextField(null=True, stripe_required=False, help_text="State of 3D secure requirement", nested_name='card')
 
     def api_retrieve(self, api_key=None):
         # OVERRIDING the parent version of this function
